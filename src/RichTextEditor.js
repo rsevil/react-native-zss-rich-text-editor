@@ -75,23 +75,26 @@ export default class RichTextEditor extends Component {
     if (this.state.keyboardHeight === newKeyboardHeight) {
       return;
     }
-    if (newKeyboardHeight) {
-      this.setEditorAvailableHeightBasedOnKeyboardHeight(newKeyboardHeight);
-    }
     this.setState({keyboardHeight: newKeyboardHeight});
+    if (newKeyboardHeight) {
+      this.setEditorAvailableHeightBasedOnKeyboardHeight();
+    }
   }
 
   _onKeyboardWillHide(event) {
     this.setState({keyboardHeight: 0});
   }
 
-  setEditorAvailableHeightBasedOnKeyboardHeight(keyboardHeight) {
+  setEditorAvailableHeightBasedOnKeyboardHeight() {
+    const keyboardHeight = this.state.keyboardHeight;
     const {top = 0, bottom = 0} = this.props.contentInset;
     const {marginTop = 0, marginBottom = 0} = this.props.style;
     const spacing = marginTop + marginBottom + top + bottom;
 
-    const editorAvailableHeight = Dimensions.get('window').height - keyboardHeight - spacing;
-    this.setEditorHeight(editorAvailableHeight);
+    this.webviewBridgeView.measure( (fx, fy, width, height, px, py) => {
+      const editorAvailableHeight = (Dimensions.get('window').height - py) - (keyboardHeight) - spacing;
+      this.setEditorHeight(editorAvailableHeight);
+    })
   }
 
   onBridgeMessage(str){
@@ -293,7 +296,11 @@ export default class RichTextEditor extends Component {
     //in release build, external html files in Android can't be required, so they must be placed in the assets folder and accessed via uri
     const pageSource = PlatformIOS ? require('./editor.html') : { uri: 'file:///android_asset/editor.html' };
     return (
-      <View style={{flex: 1}}>
+      <View style={{
+          flex: 1
+        }} 
+        ref={(r) => {this.webviewBridgeView = r}} 
+      >
         <WebViewBridge
           {...this.props}
           hideKeyboardAccessoryView={true}
