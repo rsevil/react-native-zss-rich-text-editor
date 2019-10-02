@@ -884,14 +884,6 @@
 				clearHtmlIfTextIsEmpty('zss_editor_title');
 				clearHtmlIfTextIsEmpty('zss_editor_content');
 
-				$(document).on('selectionchange',function(e){
-					console.log('selectionchange');
-					zss_editor.calculateEditorHeightWithCaretPosition();
-					zss_editor.setScrollPosition();
-					zss_editor.enabledEditingItems(e);
-					notifyIfSelectedTextHasChanged();
-				});
-
 				// Make sure that when we tap anywhere in the document we focus on the editor
 				$(window).on('touchmove', function(e) {
 					zss_editor.isDragging = true;
@@ -916,8 +908,6 @@
 
 				whenPastingInsertAsPlainText('zss_editor_title');
 				whenPastingInsertAsPlainText('zss_editor_content');
-
-				zss_editor.focusTitle();
 
 				setTimeout(function() {
 					WebViewBridge.send(JSON.stringify({type: 'ZSS_INITIALIZED'}))
@@ -1645,6 +1635,15 @@
 
 			zss_editor.setPlatform = function(platform) {
 				zss_editor.platform = platform;
+				if (platform === 'ios') {
+					$(document).on('selectionchange',function(e){
+						// console.log('selectionchange');
+						zss_editor.calculateEditorHeightWithCaretPosition();
+						zss_editor.setScrollPosition();
+						zss_editor.enabledEditingItems(e);
+						notifyIfSelectedTextHasChanged();
+					});
+				}
 			}
 
 			//end
