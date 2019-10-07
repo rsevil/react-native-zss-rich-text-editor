@@ -70,31 +70,28 @@ export default class RichTextEditor extends Component {
   }
 
   _onKeyboardWillShow(event) {
-    console.log('!!!!', event);
     const newKeyboardHeight = event.endCoordinates.height;
     if (this.state.keyboardHeight === newKeyboardHeight) {
       return;
     }
-    this.setState({keyboardHeight: newKeyboardHeight});
     if (newKeyboardHeight) {
-      this.setEditorAvailableHeightBasedOnKeyboardHeight();
+      this.setEditorAvailableHeightBasedOnKeyboardHeight(newKeyboardHeight);
     }
+    this.setState({keyboardHeight: newKeyboardHeight});
   }
 
   _onKeyboardWillHide(event) {
     this.setState({keyboardHeight: 0});
   }
 
-  setEditorAvailableHeightBasedOnKeyboardHeight() {
-    const keyboardHeight = this.state.keyboardHeight;
+  setEditorAvailableHeightBasedOnKeyboardHeight(keyboardHeight) {
     const {top = 0, bottom = 0} = this.props.contentInset;
     const {marginTop = 0, marginBottom = 0} = this.props.style;
     const spacing = marginTop + marginBottom + top + bottom;
 
-    this.webviewBridgeView.measure( (fx, fy, width, height, px, py) => {
-      const editorAvailableHeight = (Dimensions.get('window').height - py) - (keyboardHeight) - spacing;
-      this.setEditorHeight(editorAvailableHeight);
-    })
+    const editorAvailableHeight = Dimensions.get('window').height - keyboardHeight - spacing;
+    // Do not update editor height here, editor height should be calculated based on parent's height
+    // this.setEditorHeight(editorAvailableHeight);
   }
 
   onBridgeMessage(str){
@@ -206,30 +203,30 @@ export default class RichTextEditor extends Component {
   _renderLinkModal() {
     return (
         <Modal
-            animationType={"fade"}
-            transparent
-            visible={this.state.showLinkDialog}
-            onRequestClose={() => this.setState({showLinkDialog: false})}
+          animationType={"fade"}
+          transparent
+          visible={this.state.showLinkDialog}
+          onRequestClose={() => this.setState({showLinkDialog: false})}
         >
           <View style={styles.modal}>
             <View style={[styles.innerModal, {marginBottom: PlatformIOS ? this.state.keyboardHeight : 0}]}>
               <Text style={styles.inputTitle}>Title</Text>
               <View style={styles.inputWrapper}>
                 <TextInput
-                    style={styles.input}
-                    onChangeText={(text) => this.setState({linkTitle: text})}
-                    value={this.state.linkTitle}
+                  style={styles.input}
+                  onChangeText={(text) => this.setState({linkTitle: text})}
+                  value={this.state.linkTitle}
                 />
               </View>
               <Text style={[styles.inputTitle ,{marginTop: 10}]}>URL</Text>
               <View style={styles.inputWrapper}>
                 <TextInput
-                    style={styles.input}
-                    onChangeText={(text) => this.setState({linkUrl: text})}
-                    value={this.state.linkUrl}
-                    keyboardType="url"
-                    autoCapitalize="none"
-                    autoCorrect={false}
+                  style={styles.input}
+                  onChangeText={(text) => this.setState({linkUrl: text})}
+                  value={this.state.linkUrl}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
               </View>
               {PlatformIOS && <View style={styles.lineSeparator}/>}
@@ -296,11 +293,13 @@ export default class RichTextEditor extends Component {
     //in release build, external html files in Android can't be required, so they must be placed in the assets folder and accessed via uri
     const pageSource = PlatformIOS ? require('./editor.html') : { uri: 'file:///android_asset/editor.html' };
     return (
-      <View style={{
-          flex: 1
-        }} 
-        ref={(r) => {this.webviewBridgeView = r}} 
-      >
+      <View style={{flex: 1}} onLayout={ (event) => {
+        const {top = 0, bottom = 0} = this.props.contentInset;
+        const {marginTop = 0, marginBottom = 0} = this.props.style;
+        const spacing = marginTop + marginBottom + top + bottom;
+        const editorAvailableHeight = event.nativeEvent.layout.height - spacing - 80;
+        this.setEditorHeight(editorAvailableHeight);
+      }}>
         <WebViewBridge
           {...this.props}
           hideKeyboardAccessoryView={true}
@@ -319,8 +318,8 @@ export default class RichTextEditor extends Component {
   escapeJSONString = function(string) {
     return string
       .replace(/[\\]/g, '\\\\')
-      .replace(/[\"]/g, '\\\"')
-      .replace(/[\']/g, '\\\'')
+      // .replace(/[\"]/g, '\\\"')
+      // .replace(/[\']/g, '\\\'')
       .replace(/[\/]/g, '\\/')
       .replace(/[\b]/g, '\\b')
       .replace(/[\f]/g, '\\f')
