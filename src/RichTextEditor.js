@@ -10,7 +10,7 @@ const injectScript = `
     ${InjectedMessageHandler}
   }());
 `;
-
+ 
 const PlatformIOS = Platform.OS === 'ios';
 
 export default class RichTextEditor extends Component {
